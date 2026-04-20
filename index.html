@@ -108,6 +108,7 @@
             multiple 
             capture="environment"
             onchange="previewMedia(event)"
+            id="guest-name"
         >
     </div>
 
@@ -119,14 +120,31 @@
     <div class="gallery" id="gallery"></div>
 
     <script>
-        const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsZAPEl0PBbdzMo4pGw2HaBCaCBp4IuE8J2wivuY9oehVAPJyERyOdFaLfBn98p6PA/exec"; // Cole a URL que você copiou no Passo 1
-        const MAX_FILE_SIZE_MB = 50; // Limite de 50 MegaBytes
+        const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsZAPEl0PBbdzMo4pGw2HaBCaCBp4IuE8J2wivuY9oehVAPJyERyOdFaLfBn98p6PA/exec"; 
+        const MAX_FILE_SIZE_MB = 50; 
+
+        // Carrega fotos existentes ao abrir a página (doGet)
+        window.onload = async () => {
+            try {
+                const response = await fetch(APP_SCRIPT_URL);
+                const fotos = await response.json();
+                if (fotos.length > 0) {
+                    fotos.forEach(f => {
+                        const img = document.createElement('img');
+                        img.src = f.url;
+                        img.style.opacity = "0.7";
+                        document.getElementById('gallery').appendChild(img);
+                    });
+                }
+            } catch (e) { console.log("Sem fotos prévias."); }
+        };
+
 
         async function previewMedia(event) {
             const files = event.target.files;
+            const guestName = document.getElementById('guest-name').value || "Convidado";
             const loaderContainer = document.getElementById('loader-container');
             const statusText = document.getElementById('status-text');
-            const gallery = document.getElementById('gallery');
             
             if (files.length > 0) loaderContainer.style.display = 'flex';
 
@@ -134,20 +152,18 @@
                 const file = files[i];
                 const fileSizeMB = file.size / (1024 * 1024);
 
-                // Validação de Tamanho
                 if (fileSizeMB > MAX_FILE_SIZE_MB) {
-                    alert(`O arquivo "${file.name}" é muito grande (${fileSizeMB.toFixed(1)}MB). O limite é de ${MAX_FILE_SIZE_MB}MB.`);
-                    continue; // Pula este arquivo e vai para o próximo
+                    alert(`O arquivo "${file.name}" é muito grande (${fileSizeMB.toFixed(1)}MB). Limite: ${MAX_FILE_SIZE_MB}MB.`);
+                    continue; 
                 }
 
                 statusText.innerText = `Enviando ${i + 1} de ${files.length}: ${file.name}`;
                 
-                // Gera a prévia visual
                 const url = URL.createObjectURL(file);
                 renderizarNaGaleria(file, url);
 
                 try {
-                    await enviarParaGoogleDrive(file);
+                    await enviarParaGoogleDrive(file, guestName);
                 } catch (error) {
                     console.error("Erro no arquivo:", file.name);
                 }
@@ -157,7 +173,8 @@
             setTimeout(() => { loaderContainer.style.display = 'none'; }, 3000);
         }
 
-        function enviarParaGoogleDrive(file) {
+
+        function enviarParaGoogleDrive(file, guestName) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -168,7 +185,8 @@
                         body: JSON.stringify({
                             base64: base64Data,
                             type: file.type,
-                            name: file.name
+                            name: `${guestName}_${Date.now()}_${file.name}`,
+                            guest: guestName
                         })
                     })
                     .then(res => res.json())
@@ -187,18 +205,18 @@
             elemento.src = url;
 
             if (isVideo) {
-                elemento.controls = true;   // Mantém os controles (play/pause/volume)
-                elemento.autoplay = true;   // Inicia sozinho
-                elemento.muted = true;      // Obrigatório para o autoplay funcionar na maioria dos browsers
-                elemento.loop = true;       // Faz o vídeo recomeçar ao acabar
-                elemento.setAttribute('playsinline', ''); // Importante para funcionar em iPhones (iOS)
+                elemento.controls = true;
+                elemento.autoplay = true;
+                elemento.muted = true;
+                elemento.loop = true;
+                elemento.setAttribute('playsinline', ''); 
             }
 
-            gallery.appendChild(elemento);
+            gallery.prepend(elemento); // Adiciona no topo da galeria
         }
-
-
+        
     </script>
+
 
 </body>
 </html>
