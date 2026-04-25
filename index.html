@@ -1,236 +1,215 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <title>Upload de Mídia</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <title>Galeria de Memórias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 20px; min-height: 100vh;
+            display: flex; flex-direction: column; align-items: center; color: white;
+        }
 
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 20px;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                color: white; /* Texto claro para contrastar com o fundo */
-            }
+        body::before {
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('./public/img/IMG_7362.jpg');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            filter: blur(10px) brightness(0.6); z-index: -1; transform: scale(1.1);
+        }
 
-            /* Camada de fundo fixa e desfocada */
-            body::before {
-                content: "";
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-image: url('./public/img/IMG_7362.jpg');
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-                filter: blur(8px) brightness(0.7); /* Reduz nitidez e brilho */
-                z-index: -1;
-                transform: scale(1.05); /* Remove bordas brancas do blur */
-            }
+        .upload-box {
+            text-align: center; background: rgba(255, 255, 255, 0.15); padding: 25px;
+            border-radius: 20px; backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 80%; max-width: 400px; margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
 
-            h1 {
-                text-align: center;
-                text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
-            }
+        input[type="text"] {
+            width: 85%; padding: 12px; margin-bottom: 15px; border-radius: 10px; 
+            border: none; outline: none; font-size: 16px;
+        }
 
-            .upload-box {
-                text-align: center;
-                margin-bottom: 30px;
-                background: rgba(255, 255, 255, 0.2);
-                padding: 20px;
-                border-radius: 15px;
-                backdrop-filter: blur(5px); /* Efeito de vidro no botão */
-                border: 1px solid rgba(255, 255, 255, 0.3);
-            }
+        #loader-container { display: none; flex-direction: column; align-items: center; margin-top: 15px; }
+        .spinner {
+            width: 35px; height: 35px; border: 4px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%; border-top-color: #4CAF50; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-            /* Container do Spinner */
-            #loader-container {
-                display: none;
-                flex-direction: column;
-                align-items: center;
-                margin: 20px auto;
-            }
+        .gallery {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px; width: 100%; max-width: 1000px;
+        }
 
-            /* O círculo giratório */
-            .spinner {
-                width: 50px;
-                height: 50px;
-                border: 5px solid rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                border-top-color: #4CAF50; /* Cor do carregamento */
-                animation: spin 1s ease-in-out infinite;
-                -webkit-animation: spin 1s ease-in-out infinite;
-            }
+        .media-item { position: relative; width: 100%; height: 220px; }
+        
+        .media-item img, .media-item video {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 15px;
+            border: 2px solid rgba(255,255,255,0.5);
+        }
 
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
+        /* Botão para salvar na galeria do usuário */
+        .download-btn {
+            position: absolute; bottom: 10px; right: 10px;
+            background-color: rgba(255, 255, 255, 0.8); /* Fundo branco semi-transparente para dar contraste com o ícone preto */
+            border: none; border-radius: 50%; width: 35px; height: 35px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+            text-decoration: none;
+            
+            /* Inserção do ícone anexado via Base64 */
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAB2AAAAdgB+lymcgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAMZSURBVHic7dnfi1RlHMfx16zr0qIRCGGuZWR0Uf4A8UK6i4huQrGfXnjjTX9BUUiEdwmCInq7eK0SSd4IKogo7ppSiUUEIcpq0Q8Q3FVSW/PimZFh5szMnj1nzrPLPm/4Xsx55vk+n+9nzpznnO8hkUgkEolEIrEwqVW83nJsxJIO41P4Hn9WpqhCPsUD/N8j7uOTSBr7xpt4pHfxjXiEN6oQNlDFItgq39+tVp/Td6oy4LlZzBkpXUUGVRkwZ0kGxBYQm2RAbAGxSQbEFhCbZEBsAbFJBsQWEJtkQGwBsVnwBpTREnsen+n+yPt6/Xt5uImxLuN/YA9u5cxbOuNm3ukpOy4UFV/GGXAPwyXkmQ13sbRIgjKuAYdKyDEf137CIhxR/el/DINFxXf6C9TwKl7Ufor9jov4r+nYEL7BO0UFzZBT2Cy00BsMYpP2XuIUbuAXwbiuLMUu4Qrczf2L2o0Zxpke88qI89pfrDyNSz3mTeDLjLlPWItrOYTszMixBOf6WPx4vdhWvsiR4zesaU3wMv7JKWY0y0U8g8t9KP4KlnVYczRnrr+xujG5hu9mIeiDDmLgWfxcYvG/6n6j9dEsco7Xa/dezom38HkXMQ1WCqdb0eJvYNUM1ttZ15Yn91Y42mHwK6yYwcLdeAHXc4pqjgm8VFDDCHZ3yH+Y4HDmQEm8ImydeYv/S9iKyyLrh75O2EtbB3aUuDCsk+8iexsbStawI2Od+wPCTUwrd0te/CreEgrrxR28jR9K1pBV01CV/YAfhTvFqS7fuYctwk1NJVTdEBnDu/g3Y+yBsLWerVJQjI7QaWzDw6Zj09iOE1WLidUSO44PhW1uAu/j6xhCCj9OFuDbekRlwTdFkwGxBcQmGRBbQGySAbEFxGYAkxnHi/YB5iIrM47dIbt1dRVPVSat/wzjJxl1DuIkXmuZsFZ4IhsVmhnzmRF8LKMTjJO1+sAV4Q3PQmIa6xsfDirevJxvsb/ZjSHhMTW2qKriFBZrYQgHhHd+sQX2Kx4Kv3xb8c2swT5hJ5icA6KLxmS9lr3aL/YeAwcdqyujwBy6AAAAAElFTkSuQmCC');
+            
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 20px; /* Ajusta o tamanho do ícone dentro do círculo */
+        }
 
-            #status-text {
-                margin-top: 15px;
-                font-weight: bold;
-                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            }
+        .titulo-galeria { grid-column: 1 / -1; text-align: center; margin: 20px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-            .gallery {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 15px;
-                width: 100%;
-                max-width: 1000px;
-            }
+    <h1>📸 Ajude a eternizar nosso grande dia 💕</h1>
 
-            .gallery img,
-            .gallery video {
-                width: 100%;
-                height: 200px;
-                object-fit: cover;
-                border-radius: 15px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                border: 2px solid white;
-            }
-        </style>
-    </head>
-
-    <body>
-
-        <h1>📸 Ajude a eternizar nosso grande dia 💕</h1>
-
-        <div class="upload-box">
-            <input 
-                type="file" 
-                accept="image/*,video/*" 
-                multiple 
-                capture="environment"
-                onchange="previewMedia(event)"
-                id="guest-name"
-            >
-        </div>
+    <div class="upload-box">
+        <input type="text" id="guest-name" placeholder="Informe seu nome">
+        <br>
+        <input id="meu-arquivo" style="display: none;" type="file" accept="image/*,video/*" multiple capture="environment" onchange="previewMedia(event)">
+        <label for="meu-arquivo">Clique aqui e registre o momento.</label>
 
         <div id="loader-container">
             <div class="spinner"></div>
-            <p id="status-text">Iniciando upload...</p>
+            <p id="status-text" style="font-size: 14px; margin-top: 10px;">Processando...</p>
         </div>
+    </div>
 
-        <div class="gallery" id="gallery"></div>
+    <div class="gallery" id="gallery"></div>
 
-        <script>
-            const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsZAPEl0PBbdzMo4pGw2HaBCaCBp4IuE8J2wivuY9oehVAPJyERyOdFaLfBn98p6PA/exec"; 
-            const MAX_FILE_SIZE_MB = 50; 
+    <script>
+        const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsZAPEl0PBbdzMo4pGw2HaBCaCBp4IuE8J2wivuY9oehVAPJyERyOdFaLfBn98p6PA/exec"; 
+        const MAX_FILE_SIZE_MB = 50; 
+        
+        let uploadQueue = [];
+        let isProcessing = false;
 
-            // Carrega fotos existentes ao abrir a página (doGet)
-            window.onload = async () => {
-                const gallery = document.getElementById('gallery');
-                
+        // 1. CARREGAR FOTOS EXISTENTES
+        window.onload = async () => {
+            try {
+                const res = await fetch(APP_SCRIPT_URL);
+                const fotos = await res.json();
+                if (fotos && fotos.length > 0) {
+                    const gallery = document.getElementById('gallery');
+                    gallery.innerHTML += '<p class="titulo-galeria">✨ O que já enviaram:</p>';
+                    fotos.forEach(f => renderMedia(f.url, 'image', true, f.name));
+                }
+            } catch (e) { console.log("Galeria offline ou vazia."); }
+        };
+
+        // 2. SELECIONAR E ENFILEIRAR
+        function previewMedia(event) {
+            const files = event.target.files;
+            const guestName = document.getElementById('guest-name').value || "Convidado";
+            const loader = document.getElementById('loader-container');
+
+            if (files.length === 0) return;
+            loader.style.display = 'flex';
+
+            for (let file of files) {
+                if ((file.size / 1024 / 1024) > MAX_FILE_SIZE_MB) {
+                    alert(`O arquivo ${file.name} é muito grande!`);
+                    continue; 
+                }
+
+                uploadQueue.push({ file, guestName });
+                const url = URL.createObjectURL(file);
+                renderMedia(url, file.type.split('/')[0], false, file.name);
+            }
+            processQueue();
+        }
+
+        // 3. FILA COM RETENTATIVA (INTERNET RUIM)
+        async function processQueue() {
+            if (isProcessing) return;
+            isProcessing = true;
+            const statusText = document.getElementById('status-text');
+
+            while (uploadQueue.length > 0) {
+                if (!navigator.onLine) {
+                    statusText.innerText = "⏳ Sem internet, aguardando sinal. Favor não recarregar a página...";
+                    isProcessing = false;
+                    return;
+                }
+
+                const item = uploadQueue[0];
+                statusText.innerText = `Enviando: ${item.file.name}...`;
+
                 try {
-                    // Adicionamos o parâmetro de redirecionamento manual caso necessário
-                    const response = await fetch(APP_SCRIPT_URL, {
-                        method: 'GET',
-                        redirect: 'follow', // Força o navegador a seguir o redirecionamento do Google
-                    });
-                    debugger
-
-                    if (!response.ok) throw new Error('Erro na rede');
-
-                    const fotos = await response.json();
-                    
-                    if (fotos && fotos.length > 0) {
-                        // Limpa a galeria se quiser remover placeholders
-                        gallery.innerHTML = '<p style="grid-column:1/-1; text-align:center;">✨ Fotos já enviadas pelos convidados:</p>';
-                        
-                        fotos.forEach(f => {
-                            const img = document.createElement('img');
-                            img.src = f.url;
-                            img.style.opacity = "0.8";
-                            gallery.appendChild(img);
-                        });
-                    }
-                } catch (e) {
-                    console.error("Erro ao carregar galeria inicial:", e);
+                    await uploadFile(item.file, item.guestName);
+                    uploadQueue.shift();
+                } catch (error) {
+                    statusText.innerText = "🔄 Sinal instável, tentando novamente...";
+                    await new Promise(r => setTimeout(r, 4000));
                 }
-            };
-
-            async function previewMedia(event) {
-                const files = event.target.files;
-                const guestName = document.getElementById('guest-name').value || "Convidado";
-                const loaderContainer = document.getElementById('loader-container');
-                const statusText = document.getElementById('status-text');
-                
-                if (files.length > 0) loaderContainer.style.display = 'flex';
-
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const fileSizeMB = file.size / (1024 * 1024);
-
-                    if (fileSizeMB > MAX_FILE_SIZE_MB) {
-                        alert(`O arquivo "${file.name}" é muito grande (${fileSizeMB.toFixed(1)}MB). Limite: ${MAX_FILE_SIZE_MB}MB.`);
-                        continue; 
-                    }
-
-                    statusText.innerText = `Enviando ${i + 1} de ${files.length}: ${file.name}`;
-                    
-                    const url = URL.createObjectURL(file);
-                    renderizarNaGaleria(file, url);
-
-                    try {
-                        await enviarParaGoogleDrive(file, guestName);
-                    } catch (error) {
-                        console.error("Erro no arquivo:", file.name);
-                    }
-                }
-                
-                statusText.innerText = "✅ Finalizado!";
-                setTimeout(() => { loaderContainer.style.display = 'none'; }, 3000);
             }
 
+            statusText.innerText = "✅ Compartilhamento finalizado!";
+            setTimeout(() => { document.getElementById('loader-container').style.display = 'none'; }, 3000);
+            isProcessing = false;
+        }
 
-            function enviarParaGoogleDrive(file, guestName) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.readAsDataURL(file);
-                    reader.onload = function () {
-                        const base64Data = reader.result.split(',')[1];
-                        fetch(APP_SCRIPT_URL, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                base64: base64Data,
-                                type: file.type,
-                                name: `${guestName}_${Date.now()}_${file.name}`,
-                                guest: guestName
-                            })
+        // 4. FUNÇÃO DE UPLOAD OTIMIZADA (SIMPLE REQUEST)
+        function uploadFile(file, guestName) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64Data = reader.result.split(',')[1];
+                    fetch(APP_SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            base64: base64Data,
+                            type: file.type,
+                            name: `${guestName}_${Date.now()}_${file.name}`,
+                            guest: guestName
                         })
-                        .then(res => res.json())
-                        .then(data => resolve(data))
-                        .catch(err => reject(err));
-                    };
-                });
-            }
+                    })
+                    .then(res => res.json())
+                    .then(data => data.status === "success" ? resolve() : reject())
+                    .catch(reject);
+                };
+            });
+        }
 
+        // 5. RENDERIZAÇÃO COM BOTÃO DE DOWNLOAD
+        function renderMedia(url, type, isOld, fileName) {
+            const gallery = document.getElementById('gallery');
+            const container = document.createElement('div');
+            container.className = 'media-item';
 
-            function renderizarNaGaleria(file, url) {
-                const gallery = document.getElementById('gallery');
-                const isVideo = file.type.startsWith('video');
-                const elemento = isVideo ? document.createElement('video') : document.createElement('img');
-                
-                elemento.src = url;
+            const mediaEl = document.createElement(type === 'video' ? 'video' : 'img');
+            mediaEl.src = url;
+            if(type === 'video') { mediaEl.controls = true; mediaEl.setAttribute('playsinline', ''); }
+            if(isOld) mediaEl.style.opacity = "0.7";
 
-                if (isVideo) {
-                    elemento.controls = true;
-                    elemento.autoplay = true;
-                    elemento.muted = true;
-                    elemento.loop = true;
-                    elemento.setAttribute('playsinline', ''); 
-                }
-
-                gallery.prepend(elemento); // Adiciona no topo da galeria
-            }
+            // Botão para salvar na galeria do celular
+            const saveBtn = document.createElement('a');
+            saveBtn.href = url;
+            saveBtn.download = fileName || "foto_casamento.jpg";
+            saveBtn.className = 'download-btn';
             
-        </script>
-    </body>
+            // REMOVIDO: saveBtn.innerHTML = '💾'; // Não precisamos mais de texto/emoji
+
+            saveBtn.title = "Salvar no seu celular";
+
+            container.appendChild(mediaEl);
+            container.appendChild(saveBtn);
+            gallery.insertBefore(container, gallery.children[1] || gallery.firstChild);
+        }
+
+        window.addEventListener('online', processQueue);
+    </script>
+</body>
 </html>
