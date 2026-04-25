@@ -95,19 +95,6 @@
         let uploadQueue = [];
         let isProcessing = false;
 
-        // 1. CARREGAR FOTOS EXISTENTES
-        window.onload = async () => {
-            try {
-                const res = await fetch(APP_SCRIPT_URL);
-                const fotos = await res.json();
-                if (fotos && fotos.length > 0) {
-                    const gallery = document.getElementById('gallery');
-                    gallery.innerHTML += '<p class="titulo-galeria">✨ O que já enviaram:</p>';
-                    fotos.forEach(f => renderMedia(f.url, 'image', true, f.name));
-                }
-            } catch (e) { console.log("Galeria offline ou vazia."); }
-        };
-
         // 2. SELECIONAR E ENFILEIRAR
         function previewMedia(event) {
             const files = event.target.files;
